@@ -6,7 +6,7 @@
 #ifndef XbeeRadio_h
 #define XbeeRadio_h
 
-#include <Xbee.h>
+#include <XBee.h>
 #include "Arduino.h"
 
 #ifdef DEBUG
@@ -42,7 +42,16 @@ public:
 	void getResponse(XBeeRadioResponse &response);
 	XBeeRadioResponse& getResponse();
 	uint16_t myAddress;
+	uint32_t myAddress64Low,myAddress64High;
 	uint16_t getMyAddress();
+	/**
+	* Returns the 32 Low bits of the 64 bit XBee Address.
+	*/
+	uint32_t getMyAddress64Low();
+	/**
+	* Returns the 32 High bits of the 64 bit XBee Address.
+	*/
+	uint32_t getMyAddress64High();
 	bool setChannel(uint8_t channel);
 	void send(Tx16Request &request);
 	void send(Tx16Request &request, uint8_t port);
@@ -50,6 +59,12 @@ public:
 	bool sendAndCheck(Tx16Request &request);
 	bool sendAndCheck(Tx16Request &request, uint8_t port);
 	void sendAtCommand(uint8_t command[], uint8_t reply[]);
+	/**
+	* Send an AT command to the Arduino and receive a 4 Byte Reply.
+	* @param command the command to send.
+	* @param reply the buffer to store the reply.
+	*/
+	void sendAtCommand2(uint8_t command[], uint8_t reply[]);
 	void sendAtCommand(uint8_t command[], uint8_t value[], uint8_t length);
 	uint8_t init(/*NewSoftSerial mySerial*/void);
 	uint8_t init(uint8_t channel);
@@ -61,6 +76,13 @@ public:
 	void initialize_xbee_module(long baudrate);
 private:
 	uint8_t trySendingCommand(uint8_t buffer[2], AtCommandRequest atRequest,AtCommandResponse atResponse);
+	/**
+	* Tries to send the AT command to the Arduino and receive a 4 Byte Reply.
+	* @param buffer the buffer to store the reply.
+	* @param atRequest the request to send.
+	* @param atResponse the response from the Xbee.
+	*/
+	uint8_t trySendingCommand2(uint8_t buffer[4], AtCommandRequest atRequest,AtCommandResponse atResponse);
 	void getReadyForProgramming(uint16_t programmer_address);
 	
 	bool setup_command(char* command);

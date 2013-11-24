@@ -3,6 +3,7 @@ XBeeRadio.h - Library for communicating with heterogenous 802.15.4 networks.
 	Created by Vasileios Georgitzikis, November 23, 2010.
 */
 
+//#include "WProgram.h"
 #include "XbeeRadio.h"
 
 //XBeeRadioResponse::XBeeRadioResponse() : XBeeResponse(){}
@@ -184,11 +185,11 @@ uint8_t XBeeRadio::init(/*NewSoftSerial mySerial*/void)
 	pinMode(LED_PIN, OUTPUT);
 	digitalWrite(LED_PIN, HIGH);
 
-	delay(1000);
 
 	//XBeeRadio temp_xbee = XBeeRadio();
 // serial low
 	uint8_t slCmd[] = {'S','L'};
+	uint8_t shCmd[] = {'S','H'};
 
 	uint8_t chCmd[] = {'C','H'};
 	uint8_t chValue[] = {0x0C};
@@ -214,8 +215,6 @@ uint8_t XBeeRadio::init(/*NewSoftSerial mySerial*/void)
 	sendAtCommand(slCmd, buffer);
 	
 //set MY	
-	buffer[0] &= 0x0f;
-
 	myAddress = buffer[1];
 	myAddress <<= 8;
 	myAddress += buffer[0];
@@ -223,6 +222,14 @@ uint8_t XBeeRadio::init(/*NewSoftSerial mySerial*/void)
 	myValue[0] = buffer[0];
 	myValue[1] = buffer[1];
 	
+	myValue[0] &= 0x0f;
+	
+	myAddress=*((uint16_t*)myValue);
+
+	sendAtCommand2(shCmd, (uint8_t*)&myAddress64High);
+	
+	sendAtCommand2(slCmd, (uint8_t*)&myAddress64Low);
+
 	// mySerial.print("My address should be: ");
 	// mySerial.print(myValue[0], HEX);
 	// mySerial.println(myValue[1], HEX);
@@ -287,9 +294,62 @@ uint8_t XBeeRadio::trySendingCommand(uint8_t buffer[2], AtCommandRequest atReque
 
 	return error;
 }
+uint8_t XBeeRadio::trySendingCommand2(uint8_t buffer[4], AtCommandRequest atRequest,AtCommandResponse atResponse)
+{
+	uint8_t error=0;
+
+// send the command
+	this->send(atRequest);
+
+// wait up to 5 seconds for the status response
+	if (this->readPacket(5000))
+	{
+	// should be an AT command response
+		if (this->getResponse().getApiId() == AT_COMMAND_RESPONSE)
+		{
+			this->getResponse().getAtCommandResponse(atResponse);
+
+			if (atResponse.isOk())
+			{
+				if (atResponse.getValueLength() > 0)
+				{
+				    	buffer[0] = atResponse.getValue()[1];
+					buffer[1] = atResponse.getValue()[0];
+					buffer[2] = atResponse.getValue()[3];
+					buffer[3] = atResponse.getValue()[2];
+				}
+			} 
+			else
+			{
+				error=1;
+			}
+		} 
+		else
+		{
+			error=1;
+		}   
+	} 
+	else
+	{
+		error=1;
+	}
+
+	return error;
+}
+
 uint16_t XBeeRadio::getMyAddress()
 {
 	return this->myAddress;
+}
+
+uint32_t XBeeRadio::getMyAddress64Low()
+{
+	return this->myAddress64Low;
+}
+
+uint32_t XBeeRadio::getMyAddress64High()
+{
+	return this->myAddress64High;
 }
 
 uint8_t XBeeRadio::init(uint8_t channel)
@@ -381,13 +441,15 @@ void XBeeRadio::getReadyForProgramming(uint16_t programmer_address)
 	sendAtCommand(slCmd, buffer);
 	
 //set MY	
-	buffer[0] &= 0x0f;
 	myAddress = buffer[1];
 	myAddress <<= 8;
 	myAddress += buffer[0];
 	
 	myValue[0] = buffer[0];
 	myValue[1] = buffer[1];
+
+	myValue[0] &= 0x0f;
+	
 
 	// mySerial.print("My address should be: ");
 	// mySerial.print(myValue[0], HEX);
@@ -544,6 +606,19 @@ void XBeeRadio::sendAtCommand(uint8_t command[], uint8_t reply[])
 			break;
 	}	
 }
+
+void XBeeRadio::sendAtCommand2(uint8_t command[], uint8_t reply[])
+{
+	AtCommandRequest atRequest = AtCommandRequest(command);
+	AtCommandResponse atResponse = AtCommandResponse();
+	while(true)
+	{
+		// mySerial.println("Getting SL");
+		if(trySendingCommand2(reply, atRequest, atResponse) != 1)
+			break;
+	}	
+}
+
 void XBeeRadio::sendAtCommand(uint8_t command[], uint8_t value[], uint8_t length)
 {
 	AtCommandRequest atRequest = AtCommandRequest(command);
@@ -599,7 +674,7 @@ void XBeeRadio::initialize_xbee_module(long baudrate)
 	}
 	// mySerial.println("Trying to make everything right");
 
-  long cur_baud = setup_baudrate();
+  long cur_baud = setup_baudrate(baudrate);
   DBG(mySerial.print("Baudrate: ");)
   DBG(mySerial.println(cur_baud);)
   setup_command("ATAP2");
