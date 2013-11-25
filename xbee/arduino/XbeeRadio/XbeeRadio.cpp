@@ -647,6 +647,7 @@ void XBeeRadio::initialize_xbee_module(long baudrate)
 	unsigned long timestamp = millis();
 	while(millis() - timestamp < 10000)
 	{
+		wdt_reset();
 		digitalWrite(13, HIGH);
 		delay(100);
 		digitalWrite(13, LOW);
