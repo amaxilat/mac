@@ -352,8 +352,18 @@ uint32_t XBeeRadio::getMyAddress64High()
 	return this->myAddress64High;
 }
 
-uint8_t XBeeRadio::init(uint8_t channel)
-{
+uint8_t XBeeRadio::init(uint8_t channel){
+	init(channel,38400);
+}
+
+uint8_t XBeeRadio::init(uint8_t channel,long baudrate){
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__)
+        Serial1.begin(baudrate);
+	setSerial(Serial1);
+#else
+        Serial.begin(baudrate);
+	setSerial(Serial);
+#endif
 	uint8_t return_val = init();
 	setChannel(channel);
 	return return_val;
@@ -641,6 +651,7 @@ void XBeeRadio::initialize_xbee_module()
 	initialize_xbee_module(38400);
 }
 
+//void XBeeRadio::initialize_xbee_module(long baudrate)
 void XBeeRadio::initialize_xbee_module(long baudrate)
 {
 	pinMode(13, OUTPUT);
@@ -653,13 +664,22 @@ void XBeeRadio::initialize_xbee_module(long baudrate)
 		delay(100);
 	}
 	digitalWrite(13, HIGH);
+	
+	Stream* stream = &Serial;
+	
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__)
+        stream = &Serial1;
+	Serial1.begin(baudrate);
+#else
+	Serial.begin(baudrate);
+#endif
+	setSerial(*stream);
 
 	uint8_t atvr[] = {'V', 'R'};
 	AtCommandRequest atRequest = AtCommandRequest(atvr);
 	AtCommandResponse atResponse = AtCommandResponse();
 	
 	uint8_t buffer[2];
-	begin(baudrate);
 	
 	// NewSoftSerial mySerial(4, 5);
 	// mySerial.begin(9600);
@@ -831,5 +851,3 @@ bool XBeeRadio::check_for_response(void)
 
   return return_value;
 }
-
-

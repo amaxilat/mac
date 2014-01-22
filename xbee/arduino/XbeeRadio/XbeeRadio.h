@@ -68,12 +68,15 @@ public:
 	void sendAtCommand(uint8_t command[], uint8_t value[], uint8_t length);
 	uint8_t init(/*NewSoftSerial mySerial*/void);
 	uint8_t init(uint8_t channel);
+	uint8_t init(uint8_t channel,long baudrate);
+	
 	bool checkForData(void);
 	bool checkForData(uint8_t valid_port);
 	bool checkForData(uint8_t lp1,uint8_t lp2,uint8_t port);
 	
 	void initialize_xbee_module();
 	void initialize_xbee_module(long baudrate);
+	
 private:
 	uint8_t trySendingCommand(uint8_t buffer[2], AtCommandRequest atRequest,AtCommandResponse atResponse);
 	/**
