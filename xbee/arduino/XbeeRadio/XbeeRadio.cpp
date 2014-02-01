@@ -225,11 +225,18 @@ uint8_t XBeeRadio::init(/*NewSoftSerial mySerial*/void)
 	myValue[0] &= 0x0f;
 	
 	myAddress=*((uint16_t*)myValue);
+	
+	wdt_reset();
 
 	sendAtCommand2(shCmd, (uint8_t*)&myAddress64High);
 	
+	wdt_reset();
+	
+	
 	sendAtCommand2(slCmd, (uint8_t*)&myAddress64Low);
-
+	
+	wdt_reset();
+	
 	// mySerial.print("My address should be: ");
 	// mySerial.print(myValue[0], HEX);
 	// mySerial.println(myValue[1], HEX);
@@ -237,17 +244,27 @@ uint8_t XBeeRadio::init(/*NewSoftSerial mySerial*/void)
 	sendAtCommand(myCmd, myValue, sizeof(myValue));
 	// mySerial.println("Set MY");
 
+	wdt_reset();
+	
 	sendAtCommand(chCmd, chValue, sizeof(chValue));
 	// mySerial.println("Set CH");
+	
+	wdt_reset();
 	
 	sendAtCommand(pidCmd, pidValue, sizeof(pidValue));
 	// mySerial.println("Set PID");
 
+	wdt_reset();
+	
 	sendAtCommand(apCmd, apValue, sizeof(apValue));
 	// mySerial.println("Set AP");
 
+	wdt_reset();
+	
 	sendAtCommand(mmCmd, mmValue, sizeof(mmValue));
 	// mySerial.println("Set MM");
+	
+	wdt_reset();
 	
 // set AC (Enable the values we sent)
 	sendAtCommand(acCmd, buffer);	

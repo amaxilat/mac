@@ -8,6 +8,8 @@
 
 #include <XBee.h>
 #include "Arduino.h"
+#include <avr/wdt.h>
+
 
 #ifdef DEBUG
   #define DBG(X) X
