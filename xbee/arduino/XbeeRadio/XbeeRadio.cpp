@@ -375,9 +375,17 @@ uint8_t XBeeRadio::init(uint8_t channel){
 
 uint8_t XBeeRadio::init(uint8_t channel,long baudrate){
 #if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__)
+	//Flush serial to cleanup xbee connection
+	Serial1.begin(baudrate);
+	Serial1.flush();
+	Serial1.end();
         Serial1.begin(baudrate);
 	setSerial(Serial1);
 #else
+	//Flush serial to cleanup xbee connection
+	Serial.begin(baudrate);
+	Serial.flush();
+	Serial.end();
         Serial.begin(baudrate);
 	setSerial(Serial);
 #endif
@@ -668,57 +676,46 @@ void XBeeRadio::initialize_xbee_module()
 	initialize_xbee_module(38400);
 }
 
-//void XBeeRadio::initialize_xbee_module(long baudrate)
 void XBeeRadio::initialize_xbee_module(long baudrate)
 {
-	pinMode(13, OUTPUT);
-	unsigned long timestamp = millis();
-	while(millis() - timestamp < 10000)
-	{
-		digitalWrite(13, HIGH);
-		delay(100);
-		digitalWrite(13, LOW);
-		delay(100);
-	}
-	digitalWrite(13, HIGH);
-	
-	Stream* stream = &Serial;
-	
+    //Stream* stream = &Serial;
+
 #if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__)
-        stream = &Serial1;
 	Serial1.begin(baudrate);
+	setSerial(Serial1);
 #else
-	Serial.begin(baudrate);
+ 	Serial.begin(baudrate);
+	setSerial(Serial);
 #endif
-	setSerial(*stream);
 
 	uint8_t atvr[] = {'V', 'R'};
 	AtCommandRequest atRequest = AtCommandRequest(atvr);
 	AtCommandResponse atResponse = AtCommandResponse();
-	
-	uint8_t buffer[2];
-	
-	// NewSoftSerial mySerial(4, 5);
-	// mySerial.begin(9600);
-	// mySerial.println("Starting!");
-	uint8_t api_mode = trySendingCommand(buffer, atRequest, atResponse);
-	Serial.end();
-	
-	if(api_mode != 1)
-	{
-		// mySerial.println("ALREADY IN API MODE");
-		return;
-	}
-	// mySerial.println("Trying to make everything right");
 
-  long cur_baud = setup_baudrate(baudrate);
-  DBG(mySerial.print("Baudrate: ");)
-  DBG(mySerial.println(cur_baud);)
-  setup_command("ATAP2");
-  setup_command("ATBD5");
-  setup_command("ATAC");
-  Serial.end();
-  digitalWrite(13, LOW);
+	uint8_t buffer[2];
+
+// NewSoftSerial mySerial(4, 5);
+// mySerial.begin(9600);
+// mySerial.println("Starting!");
+uint8_t api_mode = trySendingCommand(buffer, atRequest, atResponse);
+if(api_mode != 1){
+// mySerial.println("ALREADY IN API MODE");
+  return;
+}
+// mySerial.println("Trying to make everything right");
+
+long cur_baud = setup_baudrate(baudrate);
+//   DBG(mySerial.print("Baudrate: ");)
+//   DBG(mySerial.println(cur_baud);)
+setup_command("ATAP2");
+setup_command("ATBD5");
+setup_command("ATAC");
+#if defined(__AVR_ATmega32U4__) || defined(__MK20DX128__)
+	Serial1.end();
+#else
+ 	Serial.end();
+#endif
+//digitalWrite(13, LOW);
 }
 
 
